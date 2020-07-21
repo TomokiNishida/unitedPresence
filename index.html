@@ -1,0 +1,100 @@
+<!doctype html>
+<html>
+<head>
+  <!-- <script src="https://docs.opencv.org/4.3.0/opencv.js"></script> -->
+  <script type="text/javascript" src="js/opencv.js"></script>
+  <script type="text/javascript" src="js/face-api.min.js"></script>
+  <script type="text/javascript" src="js/init.js"></script>
+</head>
+<body onload="startVideo(), initmodel()">
+  <div style="position: relative;">
+    <video id="video" width="640" height="480" autoplay=true style="transform: scaleX(-1);"></video>
+    <canvas id="Landmarks" width="640" height="480" style="position: absolute; top: 0px; left: 0px; transform: scaleX(-1);"></canvas>
+    <canvas id="facedirection" width="640" height="480" style="position: absolute; top: 0px; left: 0px; transform: scaleX(-1);"></canvas>
+  </div>
+  <script type="text/javascript" src="js6/solvePnP.js"></script>
+  <script>
+    const video = document.getElementById('video');
+
+    // capture model points
+    const detectPoints = [
+      // nose
+      ...[0.0, 0.0, 0.0],
+      // jaw
+      ...[0, -330, -65],
+      // left eye
+      ...[-240, 170, -135],
+      // right eye
+      ...[240, 170, -135],
+      // left mouth
+      ...[-150, -150, -125],
+      // right mouth
+      ...[150, -150, -125],
+      // left outline
+      ...[-480, 170, -340],
+      // right outline
+      ...[480, 170, -340],
+    ];
+
+    async function detect() {
+      requestAnimationFrame(detect);
+
+      const detection = await faceapi.detectSingleFace(video,new faceapi.TinyFaceDetectorOptions({inputSize: 160,})).withFaceLandmarks();
+
+      if (!detection) {
+        return;
+      }
+
+      const resizedDetection = faceapi.resizeResults(detection, {
+        width: video.width,
+        height: video.height,
+      });
+
+      const canvas = document.getElementById('Landmarks');
+      canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+      faceapi.draw.drawFaceLandmarks(canvas, resizedDetection);
+
+      const landmarks = resizedDetection.landmarks;
+      const nose = landmarks.getNose()[3];
+      const leftEye = landmarks.getLeftEye()[0];
+      const rightEye = landmarks.getRightEye()[3];
+      const jaw = landmarks.getJawOutline()[8];
+      const leftMouth = landmarks.getMouth()[0];
+      const rightMouth = landmarks.getMouth()[6];
+      const leftOutline = landmarks.getJawOutline()[0];
+      const rightOutline = landmarks.getJawOutline()[16];
+
+      const nose_arr = [nose._x, nose._y];
+      const leftEye_arr = [leftEye._x, leftEye._y];
+      const rightEye_arr = [rightEye._x, rightEye._y];
+      const jaw_arr = [jaw._x, jaw._y];
+      const leftMouth_arr = [leftMouth._x, leftMouth._y];
+      const rightMouth_arr = [rightMouth._x, rightMouth._y];
+      const leftOutline_arr = [leftOutline._x, leftOutline._y];
+      const rightOutline_arr = [rightOutline._x, rightOutline._y];
+
+
+      const {
+        success,
+        imagePoints,
+        cameraMatrix,
+        distCoeffs,
+        rvec,
+        tvec
+      } = solve({nose_arr,leftEye_arr,rightEye_arr,jaw_arr,leftMouth_arr,rightMouth_arr,leftOutline_arr,rightOutline_arr,})
+
+      if (!success) {
+        return;
+      }
+
+      const direction = headpose({ rvec, tvec, cameraMatrix, distCoeffs, imagePoints });
+
+      console.log(direction);
+
+    }
+
+    detect()
+
+  </script>
+</body>
+</html>
