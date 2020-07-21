@@ -157,5 +157,29 @@ function headpose({ rvec, tvec, cameraMatrix, distCoeffs, imagePoints }) {
     context.stroke();
     context.closePath();
 
-    return ;
+    const rnorm = Math.sqrt(rvec.data64F[0] ** 2 + rvec.data64F[1] ** 2 + rvec.data64F[2] ** 2);
+    const rx = rvec.data64F[0] / rnorm;
+    const ry = rvec.data64F[1] / rnorm;
+    const rz = rvec.data64F[2] / rnorm;
+    const rsin = Math.sin(rnorm);
+    const rcos = Math.cos(rnorm);
+
+    const r11 = rcos + (1-rcos)*rx*rx;
+    const r12 = - rsin*rz + (1-rcos)*rx*ry;
+    const r13 = rsin*ry + (1-rcos)*rx*rz;
+    const r21 = rsin*rz + (1-rcos)*rx*ry;
+    const r22 = rcos + (1-rcos)*ry*ry;
+    const r23 = - rsin*rx + (1-rcos)*ry*rz;
+    const r31 = - rsin*ry + (1-rcos)*rx*rz;
+    const r32 = rsin*rx + (1-rcos)*ry*rz;
+    const r33 = rcos + (1-rcos)*rz*rz;
+
+    const rmat = cv.matFromArray(3, 3, cv.CV_64FC1, [r11,r12,r13,r21,r22,r23,r31,r32,r33]);
+
+    const pitch = Math.asin(- r31);
+    const pcos = Math.cos(pitch);
+    const roll = Math.asin(r21/pcos);
+    const yaw = Math.asin(r32/pcos);
+
+    return {yaw,pitch,roll};
 }
