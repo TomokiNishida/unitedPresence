@@ -16,6 +16,10 @@
   <script>
     const video = document.getElementById('video');
 
+    let yaw_glb = 0.0;
+    let roll_glb = 0.0;
+    let pitch_glb = 0.0;
+
     // capture model points
     const detectPoints = [
       // nose
@@ -89,11 +93,24 @@
 
       const direction = headpose({ rvec, tvec, cameraMatrix, distCoeffs, imagePoints });
 
-      console.log(direction);
+      yaw_glb = direction.yaw;
+      roll_glb = direction.roll;
+      pitch_glb = direction.pitch;
+
+      console.log([yaw_glb,roll_glb,pitch_glb]);
 
     }
 
     detect()
+
+  </script>
+  <script>
+    const host = window.document.location.host.replace(/:.*/, '')
+    const sock = new WebSocket('ws://' + host + ':3000');
+
+    sock.addEventListener("message", e => {
+      sock.send([yaw_glb,roll_glb,pitch_glb]);
+    });
 
   </script>
 </body>
